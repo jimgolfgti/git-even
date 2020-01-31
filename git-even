@@ -107,6 +107,10 @@ repositories.each do |repo|
       git = Git.bare repo_dir
       git.fetch
     else
+      if client.contributors(repo.full_name, true).empty?
+        puts "Skipping #{repo.name} because it is empty".magenta
+        next
+      end
       puts "Cloning #{repo.name} to #{repo_dir}".magenta
       git = Git.clone repo.ssh_url, repo_dir, bare: true
     end
