@@ -117,7 +117,7 @@ repositories.each do |repo|
     Pathname.new(File.join(repo_dir, 'description')).write repo.description.nil? ? repo.name : repo.description
     next unless config[:log]
 
-    commit = git.gcommit(git.log.first)
+    commit = git.log.first
     puts "#{commit.author.name} (#{commit.author.email}) - #{commit.date.strftime('%d %B %Y %H:%M')}".light_blue.indent 2
     puts commit.message.yellow.indent 4
   rescue => e
