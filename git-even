@@ -105,7 +105,7 @@ repositories.each do |repo|
     if Dir.exists? repo_dir
       puts "Updating #{repo.name} in #{repo_dir}".magenta
       git = Git.bare repo_dir
-      git.fetch
+      git.fetch ['origin', "#{repo.default_branch}:#{repo.default_branch}"], prune: true, unshallow: true
     else
       if client.contributors(repo.full_name, true).empty?
         puts "Skipping #{repo.name} because it is empty".magenta
