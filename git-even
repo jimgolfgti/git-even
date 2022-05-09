@@ -28,6 +28,8 @@ String.class_eval do
   end
 end
 
+trap("SIGINT") { exit }
+
 begin
   opts = Slop.parse do |o|
     o.string '-k', '--key', 'GitHub API Key (Use \'-\' to read from stdin)', required: true
