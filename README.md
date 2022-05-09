@@ -17,7 +17,12 @@ $ echo "export PATH=$PWD:\$PATH" >>~/.zshrc
 Run `git-even` with `--help` to see all available options
 
 The only mandatory argument is `--key`, or short `-k` to specify a [GitHub Personal Access Token](https://github.com/settings/tokens)  
-You will need to have a token with a minimum of `repo` permission
+You will need to have a token with a minimum of `repo` permission  
+This can be given directly `-k ghp_xxxxxxxxxxxxxxxx`, piped to stdin `cat keyfile | git even -k -` or when prompted
+``` console
+git even -k -
+Please input your key:
+```
 
 Repositories are cloned to folders based on the owner login name by default into the current directory  
 Pass `--path` to override the base directory
@@ -30,7 +35,7 @@ You can automate this by passing either `--login` or `--org an-org`, but obvious
 
 ### Example Usage
 ``` console
-$ git even --key MyGitHubApiKey --login --path ~/repos
+$ cat my-ghp-token | git even --key - --login --path ~/repos
 Authenticated as jimgolfgti (James Hopper)
 Syncing login repositories
 

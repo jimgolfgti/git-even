@@ -30,7 +30,7 @@ end
 
 begin
   opts = Slop.parse do |o|
-    o.string '-k', '--key', 'GitHub API Key', required: true
+    o.string '-k', '--key', 'GitHub API Key (Use \'-\' to read from stdin)', required: true
     o.bool '-l', '--login', 'Sync login repositories'
     o.string '-o', '--org', 'Sync specific Organisation repositories'
     o.separator ''
@@ -53,6 +53,16 @@ if opts.login? and not opts[:org].nil?
   exit 1
 end
 
+if opts[:key] == "-"
+  if STDIN.tty?
+    puts "Please enter your key:"
+    key = $stdin.noecho(&:gets)
+    opts[:key] = key.strip!
+
+  else
+    opts[:key] = $stdin.gets.strip!
+  end
+end
 begin
   client = Octokit::Client.new access_token: opts[:key], auto_paginate: true
   user = client.user
