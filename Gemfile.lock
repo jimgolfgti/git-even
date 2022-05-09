@@ -54,4 +54,4 @@ DEPENDENCIES
   slop (~> 4.8)
 
 BUNDLED WITH
-   2.0.2
+   2.3.13
