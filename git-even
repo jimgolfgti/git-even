@@ -109,7 +109,11 @@ repositories = config[:org].nil? \
   : client
       .organization_repositories(config[:org], type: config[:forks] ? 'all' : 'sources', sort: 'full_name')
 
+total = 0
+cloned = 0
+updated = 0
 repositories.each do |repo|
+  total += 1
   begin
     parent_dir = File.join config[:path], repo.owner.login
     Pathname.new(parent_dir).mkpath unless Dir.exists? parent_dir
@@ -119,6 +123,7 @@ repositories.each do |repo|
       current_sha = git.log.first.sha
       git.fetch ['origin', "#{repo.default_branch}:#{repo.default_branch}"], prune: true
       next unless git.log.first.sha != current_sha
+      updated += 1
       puts "Updated #{repo.name} in #{repo_dir}".magenta
     else
       if client.contributors(repo.full_name, true).empty?
@@ -127,6 +132,7 @@ repositories.each do |repo|
         next
       end
       git = Git.clone repo.ssh_url, repo_dir, bare: true
+      cloned += 1
       puts "Cloned #{repo.name} to #{repo_dir}".magenta
     end
     Pathname.new(File.join(repo_dir, 'description')).write repo.description.nil? ? repo.name : repo.description
@@ -142,3 +148,5 @@ repositories.each do |repo|
     exit 1
   end
 end
+
+puts "Found: #{total}\nCloned: #{cloned}\nUpdated: #{updated}"
