@@ -100,6 +100,7 @@ else
   puts "Syncing #{org} repositories".blue
   config[:org] = org unless org == user.login
 end
+puts
 
 repositories = config[:org].nil? \
   ? client
@@ -110,28 +111,32 @@ repositories = config[:org].nil? \
 
 repositories.each do |repo|
   begin
-    puts
     parent_dir = File.join config[:path], repo.owner.login
     Pathname.new(parent_dir).mkpath unless Dir.exists? parent_dir
     repo_dir = File.join parent_dir, repo.name
     if Dir.exists? repo_dir
-      puts "Updating #{repo.name} in #{repo_dir}".magenta
       git = Git.bare repo_dir
+      current_sha = git.log.first.sha
       git.fetch ['origin', "#{repo.default_branch}:#{repo.default_branch}"], prune: true
+      next unless git.log.first.sha != current_sha
+      puts "Updated #{repo.name} in #{repo_dir}".magenta
     else
       if client.contributors(repo.full_name, true).empty?
         puts "Skipping #{repo.name} because it is empty".magenta
+        puts
         next
       end
-      puts "Cloning #{repo.name} to #{repo_dir}".magenta
       git = Git.clone repo.ssh_url, repo_dir, bare: true
+      puts "Cloned #{repo.name} to #{repo_dir}".magenta
     end
     Pathname.new(File.join(repo_dir, 'description')).write repo.description.nil? ? repo.name : repo.description
+    puts unless config[:log]
     next unless config[:log]
 
     commit = git.log.first
     puts "#{commit.author.name} (#{commit.author.email}) - #{commit.date.strftime('%d %B %Y %H:%M')}".light_blue.indent 2
     puts commit.message.yellow.indent 4
+    puts
   rescue => e
     puts e.message
     exit 1
