@@ -124,7 +124,7 @@ repositories.each do |repo|
       puts "Local repository found at #{repo_dir} - Fetching commits from #{repo.default_branch}".light_cyan if config[:verbose]
       git = Git.bare repo_dir
       local_sha = git.log.first.sha
-      git.fetch ['origin', "#{repo.default_branch}:#{repo.default_branch}"], prune: true
+      git.fetch ['origin', "#{repo.default_branch}:#{repo.default_branch}"], prune: true, force: true
       puts "Local  SHA #{local_sha}\nRemote SHA #{git.log.first.sha}".light_cyan if config[:verbose]
       next unless git.log.first.sha != local_sha
       updated += 1
