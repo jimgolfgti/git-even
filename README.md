@@ -1,5 +1,5 @@
 # Git-Even
-A script for synchronising repositories hosted on GitHub.com
+A utility for synchronising repositories hosted on GitHub.com
 
 ## Getting started
 Clone the repository and install dependencies (requires bundler)
@@ -40,10 +40,6 @@ Authenticated as jimgolfgti (James Hopper)
 Syncing login repositories
 
 Cloning git-even to /Users/jimgolfgti/repos/jimgolfgti/git-even
-$ docker run -d --rm --name gitlist -p 8888:80 -v ~/repos:/repos zoredache/gitlist
-8ef4fc79213281ef7905448d6556e8bb1c9e37772aeb498061028a04dc2f3ea4
-$ open http://localhost:8888
-$ docker stop gitlist
 ```
 
 ## Limitations

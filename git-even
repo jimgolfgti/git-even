@@ -1,158 +1,21 @@
 #!/usr/bin/env ruby
 
 require 'colorize'
-require 'git'
-require 'highline'
-require 'octokit'
-require 'pathname'
-require 'slop'
 
-module Slop
-  class PathOption < Option
-    def call(value)
-      Pathname.new(value)
-    end
-  end
-end
+# Load lib modules
+lib_path = File.expand_path('../lib', __FILE__)
+$LOAD_PATH.unshift(lib_path)
 
-String.class_eval do
-  def indent(count, char = ' ')
-    gsub(/([^\n]*)(\n|$)/) do |match|
-      last_iteration = ($1 == "" && $2 == "")
-      line = ""
-      line << (char * count) unless last_iteration
-      line << $1
-      line << $2
-      line
-    end
-  end
-end
+require 'cli'
 
 trap("SIGINT") { exit }
 
 begin
-  opts = Slop.parse do |o|
-    o.string '-k', '--key', 'GitHub API Key (Use \'-\' to read from stdin)', required: true
-    o.bool '-l', '--login', 'Sync login repositories'
-    o.string '-o', '--org', 'Sync specific Organisation repositories'
-    o.separator ''
-    o.separator 'Extra options:'
-    o.path '--path', 'Base path to clone into', default: Pathname.new('.')
-    o.bool '--forks', 'Include Forked repositories', default: false
-    o.bool '--last-commit', 'Output last commit message', default: false
-    o.bool '-v', '--verbose', 'Additional logging', default: false
-    o.on '-h', '--help', 'Show help' do
-      puts o
-      exit
-    end
-  end
-rescue Slop::MissingRequiredOption, Slop::UnknownOption, Slop::MissingArgument => e
+  cli = CLI.new(ARGV)
+  cli.run
+rescue SystemExit
+  raise
+rescue => e
   puts e.message.red
   exit 1
 end
-
-if opts.login? and not opts[:org].nil?
-  puts "incompatible option `-login' and `--org' cannot be used together".red
-  exit 1
-end
-
-if opts[:key] == "-"
-  if STDIN.tty?
-    puts "Please enter your key:"
-    key = $stdin.noecho(&:gets)
-    opts[:key] = key.strip!
-
-  else
-    opts[:key] = $stdin.gets.strip!
-  end
-end
-begin
-  client = Octokit::Client.new access_token: opts[:key], auto_paginate: true
-  user = client.user
-  puts "Authenticated as #{user.login} (#{user.name})".magenta
-rescue Octokit::Unauthorized => e
-  puts e.message.red
-  exit 1
-end
-
-config = {forks: opts.forks?, org: nil, path: opts[:path].expand_path, log: opts.last_commit?, verbose: opts.verbose?}
-org_names = opts.login? \
-  ? []
-  : client.organization_memberships(state: 'active').map { |org| org.organization.login }
-
-cli = HighLine.new
-if opts.login?
-  puts 'Syncing login repositories'.blue
-elsif org_names.empty?
-  puts 'Not a member of an organisation - syncing login repositories'.blue
-elsif not opts[:org].nil?
-  org = org_names.find { |name| name.casecmp(opts[:org]) == 0 }
-  if org.nil?
-    puts "Given Org '#{opts[:org]}' not accessible by login".red
-    exit 1
-  end
-  puts "Syncing #{org} repositories".blue
-  config[:org] = org
-else
-  org = cli.choose do |menu|
-    menu.prompt = 'Which login do you want to synchronise?'.green
-    menu.choices user.login, *org_names
-  end
-  puts "Syncing #{org} repositories".blue
-  config[:org] = org unless org == user.login
-end
-puts
-
-repositories = config[:org].nil? \
-  ? client
-      .repositories(nil, type: 'owner', sort: 'full_name')
-      .filter { |repo| config[:forks] or not repo.fork }
-  : client
-      .organization_repositories(config[:org], type: config[:forks] ? 'all' : 'sources', sort: 'full_name')
-
-total = 0
-cloned = 0
-updated = 0
-repositories.each do |repo|
-  total += 1
-  begin
-    puts "Processing #{repo.name} - #{repo.description}".light_cyan if config[:verbose]
-    parent_dir = File.join config[:path], repo.owner.login
-    Pathname.new(parent_dir).mkpath unless Dir.exists? parent_dir
-    repo_dir = File.join parent_dir, repo.name
-    if Dir.exists? repo_dir
-      puts "Local repository found at #{repo_dir} - Fetching commits from #{repo.default_branch}".light_cyan if config[:verbose]
-      git = Git.bare repo_dir
-      local_sha = git.log.first.sha
-      git.fetch ['origin', "#{repo.default_branch}:#{repo.default_branch}"], prune: true, force: true
-      puts "Local  SHA #{local_sha}\nRemote SHA #{git.log.first.sha}".light_cyan if config[:verbose]
-      next unless git.log.first.sha != local_sha
-      updated += 1
-      puts "Updated #{repo.name} in #{repo_dir}".magenta
-    else
-      if client.contributors(repo.full_name, true).empty?
-        puts "Skipping #{repo.name} because it is empty".magenta
-        puts
-        next
-      end
-      puts "Local repository not found at #{repo_dir} - Cloning commits from #{repo.default_branch}".light_cyan if config[:verbose]
-      git = Git.clone repo.ssh_url, repo_dir, bare: true
-      puts "Remote SHA #{git.log.first.sha}".light_cyan if config[:verbose]
-      cloned += 1
-      puts "Cloned #{repo.name} to #{repo_dir}".magenta
-    end
-    Pathname.new(File.join(repo_dir, 'description')).write repo.description.nil? ? repo.name : repo.description
-    puts unless config[:log]
-    next unless config[:log]
-
-    commit = git.log.first
-    puts "#{commit.author.name} (#{commit.author.email}) - #{commit.date.strftime('%d %B %Y %H:%M')}".light_blue.indent 2
-    puts commit.message.yellow.indent 4
-    puts
-  rescue => e
-    puts e.message
-    exit 1
-  end
-end
-
-puts "Found: #{total}\nCloned: #{cloned}\nUpdated: #{updated}"
