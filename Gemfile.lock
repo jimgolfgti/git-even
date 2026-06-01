@@ -57,6 +57,7 @@ GEM
     process_executer (4.0.2)
       track_open_instances (~> 0.1)
     public_suffix (7.0.5)
+    rake (13.4.2)
     rbs (4.0.2)
       logger
       prism (>= 1.6.0)
@@ -64,6 +65,7 @@ GEM
     rchardet (1.10.0)
     reline (0.6.3)
       io-console (~> 0.5)
+    rexml (3.4.4)
     rspec (3.13.2)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -91,6 +93,9 @@ GEM
       docile (~> 1.1)
       simplecov-html (~> 0.11)
       simplecov_json_formatter (~> 0.1)
+    simplecov-cobertura (3.1.0)
+      rexml
+      simplecov (~> 0.19)
     simplecov-html (0.13.2)
     simplecov-lcov (0.9.0)
     simplecov_json_formatter (0.1.4)
@@ -102,6 +107,7 @@ GEM
     uri (1.1.1)
 
 PLATFORMS
+  aarch64-linux
   arm64-darwin-22
   arm64-darwin-24
   x86_64-linux
@@ -112,9 +118,11 @@ DEPENDENCIES
   git (~> 4.0)
   highline (~> 3.0)
   octokit (~> 10.0)
+  rake (~> 13.0)
   rspec (~> 3.9)
   ruby-lsp-rspec
   simplecov (~> 0.22)
+  simplecov-cobertura (~> 3.1)
   simplecov-lcov (~> 0.0)
   slop (~> 4.0)
 

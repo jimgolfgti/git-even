@@ -5,13 +5,15 @@ require 'fileutils'
 if ENV['COVERAGE'] == 'true'
   begin
     require 'simplecov'
+    require 'simplecov-cobertura'
     require 'simplecov-lcov'
     SimpleCov.start do
       add_filter '/spec/'
       enable_coverage :branch
       formatter SimpleCov::Formatter::MultiFormatter.new([
         SimpleCov::Formatter::LcovFormatter,
-        SimpleCov::Formatter::HTMLFormatter
+        SimpleCov::Formatter::HTMLFormatter,
+        SimpleCov::Formatter::CoberturaFormatter
       ])
       SimpleCov::Formatter::LcovFormatter.config do |config|
         config.report_with_single_file = true
