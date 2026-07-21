@@ -1,0 +1,24 @@
+# Dependabot opens update PRs according to GitHub scheduling.
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+version: 2
+
+updates:
+  - package-ecosystem: bundler
+    schedule:
+      interval: weekly
+      day: monday
+    directory: "/"
+    groups:
+      all:
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      all:
+        patterns:
+          - "*"
