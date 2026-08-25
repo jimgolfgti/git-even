@@ -2,7 +2,7 @@ source "https://rubygems.org"
 
 gem "colorize", "~> 1.0"
 gem "faraday-retry", "~> 2.4"
-gem "git", "~> 4.4"
+gem "git", "~> 5.0"
 gem "highline", "~> 3.0"
 gem "octokit", "~> 10.0"
 gem "slop", "~> 4.0"
