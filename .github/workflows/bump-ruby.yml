@@ -1,0 +1,74 @@
+name: Bump Ruby Patch Version
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Runs every Monday at 9 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-ruby:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check for new Ruby patch release
+        id: check_ruby
+        run: |
+          python3 -c '
+          import os, re, urllib.request
+          from datetime import datetime, timezone
+
+          with open(".ruby-version") as f:
+              current = f.read().strip()
+
+          major_minor = ".".join(current.split(".")[:2])
+          url = "https://githubusercontent.com"
+          yaml_text = urllib.request.urlopen(url).read().decode("utf-8")
+
+          # Extract version and release date pairs
+          releases = re.findall(r"version:\s*([0-9.]+)\s*\n\s*date:\s*([0-9-]+)", yaml_text)
+          matching = [(v, d) for v, d in releases if v.startswith(major_minor + ".")]
+
+          if matching:
+              latest_v, latest_d = matching[0]
+              release_date = datetime.strptime(latest_d, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+              age_days = (datetime.now(timezone.utc) - release_date).days
+
+              print(f"Current: {current} | Latest: {latest_v} | Released: {latest_d} ({age_days} days ago)")
+
+              if latest_v != current and age_days > 5:
+                  with open(".ruby-version", "w") as f:
+                      f.write(latest_v + "\n")
+                  with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                      out.write("updated=true\n")
+                      out.write(f"old_version={current}\n")
+                      out.write(f"new_version={latest_v}\n")
+          '
+
+      - name: Set up new Ruby version
+        if: steps.check_ruby.outputs.updated == 'true'
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      - name: Update Gemfile.lock
+        if: steps.check_ruby.outputs.updated == 'true'
+        run: |
+          if [ -f Gemfile.lock ]; then
+            bundle lock --update=false
+          fi
+
+      - name: Create Pull Request
+        if: steps.check_ruby.outputs.updated == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "Bump Ruby to ${{ steps.check_ruby.outputs.new_version }}"
+          title: "Bump Ruby to ${{ steps.check_ruby.outputs.new_version }}"
+          body: |
+            Updates Ruby to the latest patch release (`${{ steps.check_ruby.outputs.new_version }}`), published over 5 days ago:
+            - Updates `.ruby-version`
+            - Syncs `Gemfile.lock`
+          branch: "chore/bump-ruby-${{ steps.check_ruby.outputs.new_version }}"
